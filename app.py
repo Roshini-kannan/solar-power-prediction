@@ -1,62 +1,65 @@
-
-from flask import Flask, render_template, request
+import streamlit as st
 import joblib
 import pandas as pd
 
-app = Flask(__name__)
+st.set_page_config(
+    page_title="Solar Power Prediction",
+    page_icon="☀️",
+    layout="centered"
+)
 
-# Load the trained model
-MODEL_PATH = "solar_power_prediction_model.pkl"
-model = joblib.load(MODEL_PATH)
+@st.cache_resource
+def load_model():
+    return joblib.load("solar_power_prediction_model.pkl")
 
+model = load_model()
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+st.title("☀️ Solar Power Prediction")
+st.write("Enter the environmental conditions to predict solar power output.")
 
+st.divider()
 
-@app.route("/predict", methods=["POST"])
-def predict():
-    try:
-        # Get input values from the form
-        temperature = float(request.form["temperature"])
-        humidity = float(request.form["humidity"])
-        solar_irradiance = float(request.form["solar_irradiance"])
-        wind_speed = float(request.form["wind_speed"])
+temperature = st.number_input(
+    "Temperature",
+    value=25.0
+)
 
-        # Prepare input data
-        input_data = pd.DataFrame(
-            [[
-                temperature,
-                humidity,
-                solar_irradiance,
-                wind_speed
-            ]],
-            columns=[
-                "temperature",
-                "humidity",
-                "solar_irradiance",
-                "wind_speed"
-            ]
-        )
+humidity = st.number_input(
+    "Humidity",
+    value=50.0
+)
 
-        # Predict solar power output
-        prediction = model.predict(input_data)[0]
+solar_irradiance = st.number_input(
+    "Solar Irradiance",
+    value=500.0
+)
 
-        # Avoid negative prediction
-        prediction = max(0, prediction)
+wind_speed = st.number_input(
+    "Wind Speed",
+    value=5.0
+)
 
-        return render_template(
-            "index.html",
-            prediction=round(prediction, 2)
-        )
+if st.button("Predict Solar Power", type="primary"):
 
-    except Exception as e:
-        return render_template(
-            "index.html",
-            error=str(e)
-        )
+    input_data = pd.DataFrame(
+        [[
+            temperature,
+            humidity,
+            solar_irradiance,
+            wind_speed
+        ]],
+        columns=[
+            "temperature",
+            "humidity",
+            "solar_irradiance",
+            "wind_speed"
+        ]
+    )
 
+    prediction = model.predict(input_data)[0]
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    prediction = max(0, prediction)
+
+    st.success(
+        f"☀️ Predicted Solar Power Output: {prediction:.2f}"
+    )
